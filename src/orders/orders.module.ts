@@ -5,7 +5,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Order } from './entities';
 import { OrderItem } from './entities/order-item.entity';
 import { ClientsModule, Transport } from '@nestjs/microservices';
-import { envs, envs_prd, PRODUCT_SERVICE } from '../config';
+import { envs, NATS_SERVICE } from '../config';
+// import { envs, envs_prd, PRODUCT_SERVICE } from '../config';
 
 @Module({
   controllers: [OrdersController],
@@ -15,11 +16,14 @@ import { envs, envs_prd, PRODUCT_SERVICE } from '../config';
     ClientsModule.register(
       [
       {
-        name : PRODUCT_SERVICE,
-        transport : Transport.TCP,
+        // name : PRODUCT_SERVICE,
+        name: NATS_SERVICE,
+        // transport : Transport.TCP,
+      transport: Transport.NATS,
         options : {
-          host : envs_prd.host_prd,
-          port : +envs_prd.port_prd
+          // host : envs_prd.host_prd,
+          // port : +envs_prd.port_prd
+          servers : envs.natsServers
         }
         
       }

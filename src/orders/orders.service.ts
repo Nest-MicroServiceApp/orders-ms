@@ -8,7 +8,8 @@ import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { PaginationDto } from '../common';
 import { OrderPaginationDto } from './dto/order-pagination.dto';
 import { ChangeOrderStatusDto } from './dto/change-order-status.dto';
-import { PRODUCT_SERVICE } from '../config';
+// import { PRODUCT_SERVICE } from '../config';
+import { NATS_SERVICE } from '../config';
 import { firstValueFrom } from 'rxjs';
 import { OrderItem } from './entities/order-item.entity';
 
@@ -21,7 +22,7 @@ export class OrdersService {
 
     @InjectRepository(OrderItem)
     private readonly orderItemRepository: Repository<OrderItem>,
-    @Inject(PRODUCT_SERVICE) private readonly productsClient: ClientProxy,
+    @Inject(NATS_SERVICE) private readonly client: ClientProxy,
     private readonly dataSource: DataSource,
   ) {
     this.logger.log('Database Connected');
@@ -38,7 +39,7 @@ export class OrdersService {
       const productsIds = createOrderDto.item.map((i) => i.productId);
 
       const products: any[] = await firstValueFrom(
-        this.productsClient.send({ cmd: 'validate_products' }, productsIds),
+        this.client.send({ cmd: 'validate_products' }, productsIds),
       );
 
       //* 2 - caluclos de los valores
@@ -161,7 +162,7 @@ export class OrdersService {
         const productsIds = order.orderItem.map(or => or.productId)
 
         const products: any[] = await firstValueFrom(
-          this.productsClient.send({ cmd: 'validate_products' }, productsIds),
+          this.client.send({ cmd: 'validate_products' }, productsIds),
         );
 
     
