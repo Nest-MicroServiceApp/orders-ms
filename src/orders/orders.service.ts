@@ -22,103 +22,103 @@ export class OrdersService {
 
     @InjectRepository(OrderItem)
     private readonly orderItemRepository: Repository<OrderItem>,
-    @Inject(NATS_SERVICE) private readonly client: ClientProxy,
+    //@Inject(NATS_SERVICE) private readonly client: ClientProxy,
     private readonly dataSource: DataSource,
   ) {
     this.logger.log('Database Connected');
   }
-  async create(createOrderDto: CreateOrderDto) {
-    //*Transacción
-    const queryRunner = this.dataSource.createQueryRunner();
+  // async create(createOrderDto: CreateOrderDto) {
+  //   //*Transacción
+  //   const queryRunner = this.dataSource.createQueryRunner();
 
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
+  //   await queryRunner.connect();
+  //   await queryRunner.startTransaction();
 
-    try {
-      //* 1 - Coonfirmar los ids de los productos
-      const productsIds = createOrderDto.item.map((i) => i.productId);
+  //   try {
+  //     //* 1 - Coonfirmar los ids de los productos
+  //     const productsIds = createOrderDto.item.map((i) => i.productId);
 
-      const products: any[] = await firstValueFrom(
-        this.client.send({ cmd: 'validate_products' }, productsIds),
-      );
+  //     const products: any[] = await firstValueFrom(
+  //       this.client.send({ cmd: 'validate_products' }, productsIds),
+  //     );
 
-      //* 2 - caluclos de los valores
-      //createOrderDto: cojemos este, porque puede que je trael array de ordenes, sean los mismos ids pero diferentes cantidades o tallas, etc.
-      const totalAmaunt = createOrderDto.item.reduce((accm, orderItem) => {
-        const price = products.find(
-          (product) => product.id === orderItem.productId,
-        ).price;
+  //     //* 2 - caluclos de los valores
+  //     //createOrderDto: cojemos este, porque puede que je trael array de ordenes, sean los mismos ids pero diferentes cantidades o tallas, etc.
+  //     const totalAmaunt = createOrderDto.item.reduce((accm, orderItem) => {
+  //       const price = products.find(
+  //         (product) => product.id === orderItem.productId,
+  //       ).price;
 
-        return price * orderItem.quantity;
-      }, 0);
+  //       return price * orderItem.quantity;
+  //     }, 0);
 
-      const totalItems = createOrderDto.item.reduce((acc, orderItem) => {
-        return acc + orderItem.quantity;
-      }, 0);
+  //     const totalItems = createOrderDto.item.reduce((acc, orderItem) => {
+  //       return acc + orderItem.quantity;
+  //     }, 0);
 
-      //* 3 - crear transacción de bd
+  //     //* 3 - crear transacción de bd
 
-      const order = await this.orderRepository.create({
-        totalItems: totalItems,
-        totoalAmount: totalAmaunt,
-        orderItem: createOrderDto.item.map((orderItem) => {
-          return this.orderItemRepository.create({
-            productId: orderItem.productId,
-            quantity: orderItem.productId,
-            price: products.find((product) => product.id == orderItem.productId)
-              .price,
-          });
-        }),
-      });
+  //     const order = await this.orderRepository.create({
+  //       totalItems: totalItems,
+  //       totoalAmount: totalAmaunt,
+  //       orderItem: createOrderDto.item.map((orderItem) => {
+  //         return this.orderItemRepository.create({
+  //           productId: orderItem.productId,
+  //           quantity: orderItem.productId,
+  //           price: products.find((product) => product.id == orderItem.productId)
+  //             .price,
+  //         });
+  //       }),
+  //     });
 
-      const orderSave = await queryRunner.manager.save(order);
+  //     const orderSave = await queryRunner.manager.save(order);
 
-      // const orderItems = await createOrderDto.item.map((orderItem) =>{
-      //   return this.orderItemRepository.create({
-      //     productId : orderItem.productId,
-      //     quantity : orderItem.productId,
-      //     price : products.find(product => product.id == orderItem.productId ).price,
-      //     order: orderSave
-      //   })
-      // });
+  //     // const orderItems = await createOrderDto.item.map((orderItem) =>{
+  //     //   return this.orderItemRepository.create({
+  //     //     productId : orderItem.productId,
+  //     //     quantity : orderItem.productId,
+  //     //     price : products.find(product => product.id == orderItem.productId ).price,
+  //     //     order: orderSave
+  //     //   })
+  //     // });
 
-      // const orderItemsSave = await queryRunner.manager.save(orderItems);
-      await queryRunner.commitTransaction();
+  //     // const orderItemsSave = await queryRunner.manager.save(orderItems);
+  //     await queryRunner.commitTransaction();
 
-      return {
-        ...orderSave,
-        orderItem: orderSave.orderItem.map(order => ({
-          price : order.price,
-          order : order.quantity,
-          product : {
-            productId : order.productId,
-            name : products.find(product => product.id ===  order.productId).name
-          }
+  //     return {
+  //       ...orderSave,
+  //       orderItem: orderSave.orderItem.map(order => ({
+  //         price : order.price,
+  //         order : order.quantity,
+  //         product : {
+  //           productId : order.productId,
+  //           name : products.find(product => product.id ===  order.productId).name
+  //         }
   
-         }))
-      };
+  //        }))
+  //     };
 
      
-    } catch (error) {
-      await queryRunner.rollbackTransaction();
+  //   } catch (error) {
+  //     await queryRunner.rollbackTransaction();
 
-      throw new RpcException({
-        status: HttpStatus.BAD_REQUEST,
-        message: 'check logs',
-      });
-    } finally {
-      await queryRunner.release();
-    }
+  //     throw new RpcException({
+  //       status: HttpStatus.BAD_REQUEST,
+  //       message: 'check logs',
+  //     });
+  //   } finally {
+  //     await queryRunner.release();
+  //   }
 
-    // try {
-    //   const order = this.orderRepository.create(createOrderDto);
-    //   const odeerSave = await this.orderRepository.save(order);
+  //   // try {
+  //   //   const order = this.orderRepository.create(createOrderDto);
+  //   //   const odeerSave = await this.orderRepository.save(order);
 
-    //   return odeerSave;
-    // } catch (error) {
-    //   console.log(error);
-    // }
-  }
+  //   //   return odeerSave;
+  //   // } catch (error) {
+  //   //   console.log(error);
+  //   // }
+  // }
 
   async findAll(oderPaginationDto: OrderPaginationDto) {
     const { limit, page, status } = oderPaginationDto;
@@ -161,9 +161,9 @@ export class OrdersService {
 
         const productsIds = order.orderItem.map(or => or.productId)
 
-        const products: any[] = await firstValueFrom(
-          this.client.send({ cmd: 'validate_products' }, productsIds),
-        );
+        // const products: any[] = await firstValueFrom(
+        //   this.client.send({ cmd: 'validate_products' }, productsIds),
+        // );
 
     
       
@@ -173,7 +173,7 @@ export class OrdersService {
           price : order.price,
           order : order.quantity,
           productId : order.productId,
-          productName :  products.find(product => product.id ===  order.productId).name
+         // productName :  products.find(product => product.id ===  order.productId).name
           
   
          }))
