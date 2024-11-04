@@ -14,14 +14,15 @@ const envsSchema = joi.object({
 
 }).unknown(true);
 
+
 const {error, value } = envsSchema.validate(process.env);
+
 
 if(error){
     throw new Error(`Configuración de validación error: ${error.message}`)
 }
 
 const envsVars : EnvVars = value;
-
 export const envs_prd = {
     port_prd: envsVars.PRODUCT_MICROSERVICE_PORT,
     host_prd : envsVars.PRODUCT_MICROSERVICE_HOST

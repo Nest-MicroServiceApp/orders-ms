@@ -16,13 +16,11 @@ export class OrdersController {
   @MessagePattern('createOrder')
   create(@Payload() createOrderDto: CreateOrderDto) {
     
- 
     // return {
     //   services : "Orders Microservices",
     //   createOrderDto: createOrderDto
     // }
-    //return this.ordersService.create(createOrderDto);
-    return null;
+    return this.ordersService.create(createOrderDto);
   }
 
   @MessagePattern('findAllOrders')
@@ -32,7 +30,6 @@ export class OrdersController {
 
   @MessagePattern('findOneOrder')
   findOne(@Payload('id', ParseIntPipe) id: number) {
-    console.log(id)
     return this.ordersService.findOne(id);
   }
 
