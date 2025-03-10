@@ -20,6 +20,7 @@ import { ChangeOrderStatusDto } from './dto/change-order-status.dto';
 import { NATS_SERVICE } from '../config';
 import { firstValueFrom } from 'rxjs';
 import { OrderItem } from './entities/order-item.entity';
+import { OrderWithProducts } from './interfaces/order-with-products';
 
 @Injectable()
 export class OrdersService {
@@ -74,7 +75,7 @@ export class OrdersService {
         orderItem: createOrderDto.items.map((orderItem) => {
           return this.orderItemRepository.create({
             productId: orderItem.productId,
-            quantity: orderItem.productId,
+            quantity: orderItem.quantity,
             price: products.find((product) => product.id == orderItem.productId)
               .price,
           });
@@ -108,7 +109,7 @@ export class OrdersService {
         ...orderSave,
         orderItem: orderSave.orderItem.map((order) => ({
           price: order.price,
-          order: order.quantity,
+          quantity: order.quantity,
           product: {
             productId: order.productId,
             name: products.find((product) => product.id === order.productId)
@@ -171,11 +172,11 @@ export class OrdersService {
       });
 
     const productsIds = order.orderItem.map((or) => or.productId);
-    console.log(productsIds)
+    console.log(productsIds);
     const products: any[] = await firstValueFrom(
       this.client.send({ cmd: 'validate_products' }, productsIds),
     );
-    console.log(products)
+    console.log(products);
     return {
       ...order,
       orderItem: order.orderItem.map((order) => ({
@@ -210,5 +211,24 @@ export class OrdersService {
 
     const orderUpdate = await this.orderRepository.save(order);
     return orderUpdate;
+  }
+
+  async createPaymentSession(order: OrderWithProducts) {
+
+    const paymentSessionSend  =  await {
+      orderId: order.id.toString(), 
+      currency: "usd", 
+      items: order.orderItem.map(item=>({
+        name: item.product.name,
+        price: item.price,
+        quantity: item.quantity
+      }))
+    }
+
+    const paymentSession = await firstValueFrom(
+      this.client.send('create.payment.session',paymentSessionSend),
+    );
+
+    return paymentSession;
   }
 }

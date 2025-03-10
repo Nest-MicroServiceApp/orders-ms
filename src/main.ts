@@ -6,11 +6,13 @@ import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 
 async function bootstrap() {
   const logger = new Logger('OrdersMS-Main');
+  
+  //! La configuracion con NATS -> (servidor NATS): Tu microservicio actúa como un suscriptor/receptor de mensajes.
   const app = await NestFactory.createMicroservice<MicroserviceOptions>(
     AppModule,
     {
      // transport: Transport.TCP,
-      transport : Transport.NATS,
+      transport : Transport.NATS, 
       options: {
        // port: envs.port,
         servers: envs.natsServers
