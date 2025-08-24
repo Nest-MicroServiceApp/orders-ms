@@ -46,7 +46,10 @@ export class Order {
   })
   paidAt?: Date;
 
-  @Column('text')
+  @Column('text',{
+    nullable: true,
+    default: null
+  })
   stripeChargeId: string
 
   @CreateDateColumn()

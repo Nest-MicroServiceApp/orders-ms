@@ -10,7 +10,7 @@ import {
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Order } from './entities';
+import { Order, OrderReceipt } from './entities';
 import { createQueryBuilder, DataSource, Repository } from 'typeorm';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { PaginationDto } from '../common';
@@ -21,6 +21,8 @@ import { NATS_SERVICE } from '../config';
 import { firstValueFrom } from 'rxjs';
 import { OrderItem } from './entities/order-item.entity';
 import { OrderWithProducts } from './interfaces/order-with-products';
+import { PiadOrderDto } from './dto';
+import { OrderStatus } from './enum/order.enum';
 
 @Injectable()
 export class OrdersService {
@@ -230,5 +232,48 @@ export class OrdersService {
     );
 
     return paymentSession;
+  }
+
+  async paidOrder(paidOrderDto : PiadOrderDto){
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+  
+    try {
+      // 1. Actualiza la orden
+      await queryRunner.manager.update(Order, { id: paidOrderDto.orderId }, {
+        status: OrderStatus.PAID,
+        paid: true,
+        paidAt: new Date(),
+        stripeChargeId: paidOrderDto.stripePaymentId
+      });
+  
+      // 2. Obtiene la orden actualizada para relacionarla
+      const order = await queryRunner.manager.findOne(Order, {
+        where: { id: paidOrderDto.orderId }
+      });
+  
+      if (!order) {
+        throw new Error('Order not found');
+      }
+  
+      // 3. Crea el recibo
+      const receipt = new OrderReceipt();
+      receipt.order = order;
+      receipt.receiptUrl = paidOrderDto.receiptUrl; // Asegúrate de tener este campo en el DTO
+  
+      await queryRunner.manager.save(OrderReceipt, receipt);
+      
+      // 4. Commit si todo fue bien
+      await queryRunner.commitTransaction();
+
+      return order
+
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
   }
 }

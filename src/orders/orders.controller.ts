@@ -6,6 +6,7 @@ import { UpdateOrderDto } from './dto/update-order.dto';
 import { PaginationDto } from '../common';
 import { OrderPaginationDto } from './dto/order-pagination.dto';
 import { ChangeOrderStatusDto } from './dto/change-order-status.dto';
+import { PiadOrderDto } from './dto';
 
 @Controller()
 export class OrdersController {
@@ -51,10 +52,11 @@ changeOrderStatus(@Payload() changeOrderStatusDto: ChangeOrderStatusDto) {
   }
 
 @EventPattern('payment.succeeded')
-paidOrder(@Payload() paidOrderDto: any){
-  console.log({paidOrderDto});
+paidOrder(@Payload() paidOrderDto: PiadOrderDto){
 
-  return;
+  const orderPaid = this.ordersService.paidOrder(paidOrderDto)
+
+  return orderPaid;
 }
 
 }
